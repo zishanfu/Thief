@@ -1,4 +1,5 @@
 # Thief
+This repository contains the web crawler projects.
 
 ## ScrapyKickstarter
 The project scrapy the data from kickstarter, format data and save in file.
