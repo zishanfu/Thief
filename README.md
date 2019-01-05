@@ -1,6 +1,11 @@
 # Thief
 This repository contains the web crawler projects.
 
+## Instructions
+Install the needed python packages scrapy selenium
+Configurate the paths in the file
+Run the scrapy by **scrapy crawl kickstarter**
+
 ## ScrapyKickstarter
 The project scrapy the data from kickstarter, format data and save in file.
 
