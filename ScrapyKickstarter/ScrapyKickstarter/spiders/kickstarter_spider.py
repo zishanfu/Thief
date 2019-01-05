@@ -8,7 +8,9 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
 
-URL = "https://www.kickstarter.com/discover/advanced?state=successful&category_id=12&woe_id=23424977&sort=popularity&seed=2572311&page=%d"
+#URL = "https://www.kickstarter.com/discover/advanced?state=successful&category_id=12&woe_id=23424977&sort=popularity&seed=2572311&page=%d"
+
+URL = "https://www.kickstarter.com/discover/advanced?category_id=12&woe_id=23424977&sort=popularity&seed=2572311&page=%d"
 
 class KickstarterSpider(scrapy.Spider):
     name = "kickstarter"
@@ -45,6 +47,14 @@ class KickstarterSpider(scrapy.Spider):
         for p in project:
             pStr = "{" + str(p.encode('utf-8'))[1: -1] + "}"
             projectJson = json.loads(pStr)
+
+            # check if the project is not live project
+            if projectJson['state'] == "live":
+                continue
+
+            # check if the project is not successful
+            if float(projectJson['pledged']) >= float(projectJson['goal']):
+                continue
 
             projectInfo = ProjectInfo()
             projectInfo["ProjectResults"] = {
@@ -234,7 +244,7 @@ class KickstarterSpider(scrapy.Spider):
             if len(items) == 0:
                 projectInfo['totalVCommentsPercent'] = 0
             else:
-               projectInfo['totalVCommentsPercent'] = 100 * float(projectInfo['totalVCommentsSample']) / float(len(items))
+                projectInfo['totalVCommentsPercent'] = 100 * float(projectInfo['totalVCommentsSample']) / float(len(items))
             return projectInfo
 
         finally:
