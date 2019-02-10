@@ -1,4 +1,5 @@
 import scrapy,json,time
+import urllib
 from scrapy.selector import Selector
 from scrapy.exceptions import CloseSpider
 from ScrapyKickstarter.items import ProjectInfo
@@ -7,10 +8,16 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
+#Successful projects
+# URL = "https://www.kickstarter.com/discover/advanced?state=successful&category_id=12&woe_id=23424977&sort=popularity&seed=2572311&page=%d"
 
-#URL = "https://www.kickstarter.com/discover/advanced?state=successful&category_id=12&woe_id=23424977&sort=popularity&seed=2572311&page=%d"
+# < 75%
+# URL = "https://www.kickstarter.com/discover/advanced?category_id=12&woe_id=23424977&raised=0&sort=popularity&seed=2572311&page=%d"
 
-URL = "https://www.kickstarter.com/discover/advanced?category_id=12&woe_id=23424977&sort=popularity&seed=2572311&page=%d"
+# [75%, 100%]
+URL = "https://www.kickstarter.com/discover/advanced?category_id=12&woe_id=23424977&raised=1&sort=popularity&seed=2572311&page=%d"
+
+videoloc = "/Users/SammiFu/Desktop/task1/newResults/video/"
 
 class KickstarterSpider(scrapy.Spider):
     name = "kickstarter"
@@ -48,11 +55,11 @@ class KickstarterSpider(scrapy.Spider):
             pStr = "{" + str(p.encode('utf-8'))[1: -1] + "}"
             projectJson = json.loads(pStr)
 
-            # check if the project is not live project
+            #check if the project is not live project
             if projectJson['state'] == "live":
                 continue
 
-            # check if the project is not successful
+            #check if the project is not successful
             if float(projectJson['pledged']) >= float(projectJson['goal']):
                 continue
 
@@ -66,23 +73,19 @@ class KickstarterSpider(scrapy.Spider):
                 "goalFinishedPercentage": self.formatNum(projectJson['percent_funded'])
             }
 
-            projectInfo["ProjectTitle"] = self.formatStr(projectJson['name'])
+            projectInfo["ProjectTitle"] = self.formatStr(projectJson['name']).replace("/", " ")
             projectInfo["ProjectDescription"] = self.formatStr(projectJson['blurb'])
             projectInfo["CreatedBy"] = self.formatStr(projectJson['creator']['name'])
 
-
             project_url = str(projectJson['urls']['web']['project'].encode('utf-8'))
 
-            #project_url_comments = project_url + '/comments'
+            projectInfo["ProjectLink"] = project_url
+
             self.popularity += 1
 
             request = scrapy.Request(project_url, callback=self.parse_project_detail)
             request.meta["projectInfo"] = projectInfo
             yield request
-
-            # request = scrapy.Request(project_url_comments, callback=self.parse_project_comments)
-            # request.meta["projectInfo"] = projectInfo
-            # yield request
 
             curPage = response.request.url[response.request.url.index("page=")+5:]
             projectInfo["popularity"] = 12*(int(curPage) - 1) + self.popularity
@@ -147,24 +150,22 @@ class KickstarterSpider(scrapy.Spider):
             '*//div[@class="full-description js-full-description responsive-media formatted-lists"]//text()').extract())
         des = [x for x in tmp if len(x) != 0]
 
-        champaign = {
-            "totalImage": ti,
-            "description": des
-        }
 
         # Project timeline
         projectInfo['ProjectTimeLine'] = self.formatList(sel.xpath('//div[@class="NS_campaigns__funding_period"]/p/time/@datetime').extract())
         projectInfo['ProjectSupports'] = json.dumps(supports)
-        projectInfo['ProjectChampaign'] = json.dumps(champaign)
+        projectInfo['ProjectChampaign'] = des
+        projectInfo['TotalChampaignImage'] = ti
         projectInfo['totalComments'] = sel.xpath('//span[@class="count"]/data/@data-value').extract()[0]
 
-        project_url_update = response.request.url + '/updates'
 
+        # Check Video
+        # video = sel.css("video").xpath('//source/@src').extract()
+
+        project_url_update = response.request.url + '/updates'
         request = scrapy.Request(project_url_update, callback=self.parse_project_update)
         request.meta["projectInfo"] = projectInfo
-
         return request
-
 
     #timelime, updates between each timelime
     def parse_project_update(self, response):
@@ -207,8 +208,22 @@ class KickstarterSpider(scrapy.Spider):
         count = 0
 
         items = []
+        video = []
+
+        # Video on title and need click
 
         try:
+            # video click and download
+            videoClick = driver.find_elements(By.XPATH,
+                                              "//button[contains(@class,'m-auto w20p h20p w15p-md h15p-md p1 p2-md bg-green-700 border border-white border-medium')]")
+            # ChampaignVideo
+            # ChampaignVideoLink
+            if videoClick:
+                videoClick[0].click()
+                time.sleep(0.3)
+                video = driver.find_elements(By.XPATH,
+                                             "*//video[contains(@class, 'aspect-ratio--object z1')]//source")
+
             # load comments section
             wait.until(
                 EC.presence_of_element_located(
@@ -216,12 +231,11 @@ class KickstarterSpider(scrapy.Spider):
             )
             # automate click operations to load all comments
             while click_more and len(items) < 1000:
-                time.sleep(1)
+                time.sleep(0.5)
                 loadmore = driver.find_element_by_id('react-project-comments').find_elements(By.XPATH,
                                                                                                  "//button[contains(@class,'bttn')]")
                 items = driver.find_elements(By.XPATH,
                                                  '*//ul[@class="bg-grey-100 border border-grey-400 p2 mb3"]//div[@class="flex mb3"]')
-
                 if loadmore:
                     loadmore[0].click()
                 else:
@@ -230,16 +244,36 @@ class KickstarterSpider(scrapy.Spider):
 
             # differentiate comments and count the results
             for item in items:
+                time.sleep(0.3)
                 text = self.formatStr(item.text)
                 if "Creator" in text or "Collaborator" in text:
                     count += 1
 
-        except Exception:
+        except Exception as e:
             projectInfo['totalVCommentsSample'] = "no comments"
             projectInfo['totalVCommentsPercent'] = "no percent"
+            projectInfo['ChampaignVideo'] = "False"
+            projectInfo['ChampaignVideoLink'] = "No Link"
+            print(e)
             return projectInfo
 
         else:
+            if len(video) >= 2:
+                url = video[1].get_property('src')
+                projectInfo['ChampaignVideo'] = "True"
+                projectInfo['ChampaignVideoLink'] = url
+
+                name = projectInfo["ProjectTitle"]
+                name = videoloc + name + ".mp4"
+
+                print("Downloading starts...\n")
+                urllib.urlretrieve(url, name)
+                print("Download completed..!!")
+
+            else:
+                projectInfo['ChampaignVideo'] = "False"
+                projectInfo['ChampaignVideoLink'] = "No Link"
+
             projectInfo['totalVCommentsSample'] = len(items) - count
             if len(items) == 0:
                 projectInfo['totalVCommentsPercent'] = 0

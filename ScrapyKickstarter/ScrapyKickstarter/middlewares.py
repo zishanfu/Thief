@@ -62,11 +62,11 @@ class ScrapykickstarterDownloaderMiddleware(object):
     # scrapy acts as if the downloader middleware does not modify the
     # passed objects.
 
-    def __init__(self):
+    # def __init__(self):
         #/Users/SammiFu/Downloads/ProxyList.txt
-        PROXY_LIST = '/Your/Proxy/Path/ProxyList.txt'
-        with open(PROXY_LIST) as f:
-            self.proxies = [ip.strip() for ip in f]
+        # PROXY_LIST = '/Users/SammiFu/Desktop/task1/code/Thief/ProxyList.txt'
+        # with open(PROXY_LIST) as f:
+        #     self.proxies = [ip.strip() for ip in f]
 
     @classmethod
     def from_crawler(cls, crawler):
@@ -85,7 +85,9 @@ class ScrapykickstarterDownloaderMiddleware(object):
         # - or return a Request object
         # - or raise IgnoreRequest: process_exception() methods of
         #   installed downloader middleware will be called
-        request.meta['proxy'] = 'http://{}'.format(random.choice(self.proxies))
+        #request.meta['proxy'] = 'http://{}'.format(random.choice(self.proxies))
+        return None
+
 
     def process_response(self, request, response, spider):
         # Called with the response returned from the downloader.

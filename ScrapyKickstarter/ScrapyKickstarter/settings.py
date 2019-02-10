@@ -51,18 +51,18 @@ DOWNLOAD_DELAY = 0.5
 #}
 
 # Retry when proxies fail
-RETRY_TIMES = 3
+# RETRY_TIMES = 3
 
 # Retry on most error codes since proxies fail for different reasons
-RETRY_HTTP_CODES = [500, 503, 504, 400, 403, 404, 408]
+# RETRY_HTTP_CODES = [500, 503, 504, 400, 403, 404, 408]
 
 # Enable or disable downloader middlewares
 # See https://doc.scrapy.org/en/latest/topics/downloader-middleware.html
-DOWNLOADER_MIDDLEWARES = {
-   'scrapy.downloadermiddlewares.retry.RetryMiddleware': 80,
-   'ScrapyKickstarter.middlewares.ScrapykickstarterDownloaderMiddleware': 100,
-   'scrapy.downloadermiddlewares.httpproxy.HttpProxyMiddleware': 110,
-}
+# DOWNLOADER_MIDDLEWARES = {
+#    'scrapy.downloadermiddlewares.retry.RetryMiddleware': 80,
+#    'ScrapyKickstarter.middlewares.ScrapykickstarterDownloaderMiddleware': 100,
+#    'scrapy.downloadermiddlewares.httpproxy.HttpProxyMiddleware': 110,
+# }
 
 # Enable or disable extensions
 # See https://doc.scrapy.org/en/latest/topics/extensions.html
