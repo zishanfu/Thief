@@ -15,7 +15,7 @@ class ScrapykickstarterPipeline(object):
 
     def open_spider(self, spider):
         # /Users/SammiFu/Desktop/task1/data1
-        self.file = open('/Users/SammiFu/Desktop/task1/Feb/successful.json', 'w')
+        self.file = open('../../../collections/successful.json', 'w')
         self.file.write("[\n")
 
     def close_spider(self, spider):

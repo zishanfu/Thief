@@ -28,7 +28,7 @@ class KickstarterSpider(scrapy.Spider):
 
     def start_requests(self):
         list = []
-        with open("/Users/SammiFu/Desktop/task1/data/all/successful.json") as f:
+        with open("../all/successful.json") as f:
             projects = json.load(f)
             for project in projects:
                 list.append(project['ProjectLink'])
